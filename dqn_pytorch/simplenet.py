@@ -1,24 +1,22 @@
 import torch
 import torch.nn as nn
-import torch.nn.function as F
+import torch.nn.functional as F
 
 
-class SimpleNet(nn.Module):
+class SimpleANN(nn.Module):
 
-    def __init__(self, output_size):
+    def __init__(self, input_size, output_size):
+        super(SimpleANN, self).__init__()
+
+        self.input_size = input_size
         self.output_size = output_size
 
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=5, stride=2)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
-        self.bn3 = nn.BatchNorm2d(32)
-        self.head = nn.Linear(448, 2)
+        self.fc1 = nn.Linear(input_size, 24)
+        self.fc2 = nn.Linear(24, 24)
+        self.head = nn.Linear(24, self.output_size)
 
 
     def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
-        return self.head(x.view(x.size(0), -1))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.head(x)
