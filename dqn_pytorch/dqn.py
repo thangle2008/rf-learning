@@ -24,7 +24,7 @@ LongTensor = torch.cuda.LongTensor if torch.cuda.is_available() else \
 
 class DQN(object):
 
-    def __init__(self, model, optimizer, replay_size=10000, batch_size=32,
+    def __init__(self, model, optimizer, replay_size=1000, batch_size=32,
                  gamma=0.95, eps_start=0.9, eps_end=0.05, eps_decay=200):
         """Initialize a DQN from a network model."""
 
@@ -103,3 +103,15 @@ class DQN(object):
             return q_s.data.max(1)[1].view(1, 1)
         else:
             return LongTensor([[random.randrange(self.model.output_size)]])
+
+
+    def save_model(self, path):
+        """Save the parameters of the model."""
+
+        torch.save(self.model.state_dict(), path)
+
+
+    def load_model(self, path):
+        """Load parameters to the model."""
+
+        self.model.load_state_dict(torch.load(path))

@@ -1,5 +1,6 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
+from collections import deque
 import gym
 
 import torch
@@ -9,7 +10,8 @@ from simplenet import SimpleANN
 from dqn import Transition, DQN
 
 
-NUM_EPISODES = 5000 
+NUM_EPISODES = 5000
+TIMES_SOLVED = 200
 
 
 FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else \
@@ -22,20 +24,24 @@ def numpy_to_tensor(s):
 
 def main():
     # set up environment
-    env = gym.make('CartPole-v0')
+    env = gym.make('CartPole-v1')
+    env.seed(1234567)
 
     # set up network model
-    input_size = env.observation_space.shape[0] # should be 4
-    output_size = env.action_space.shape[0]     # should be 2
+    input_size = env.observation_space.shape[0]
+    output_size = env.action_space.n 
 
     model = SimpleANN(input_size, output_size)
+
     if torch.cuda.is_available():
         model.cuda()
     optimizer = optim.Adam(model.parameters())
     dqn = DQN(model, optimizer, eps_start=1.0, eps_end=0.01,
-              eps_decay=10000)
+              eps_decay=30000, replay_size=2000)
 
     time = 0
+    last_scores = deque(maxlen=TIMES_SOLVED)
+    best_avg_score = 0.0
 
     for e in range(NUM_EPISODES):
         state = env.reset()
@@ -45,7 +51,7 @@ def main():
 
         last_time = time
         while not done:
-            env.render()
+            #env.render()
 
             # pick an action and move onto next state
             action = dqn.select_action(state, time)
@@ -64,9 +70,16 @@ def main():
             state = next_state
 
         score = time - last_time
+        last_scores.append(score)
         print("Episode {}/{} has score = {}".format(e + 1, NUM_EPISODES, score))
 
-    env.render(close=True)
+        if len(last_scores) == TIMES_SOLVED:
+            avg_score = sum(last_scores) / len(last_scores)
+            if best_avg_score < avg_score:
+                best_avg_score = avg_score
+                dqn.save_model("./saved_models/dqn_cartpole.pkl")
+
+
     env.close()
 
 
