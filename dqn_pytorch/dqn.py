@@ -2,6 +2,7 @@ from __future__ import division, print_function
 
 import random
 import math
+import copy
 from collections import deque, namedtuple
 
 import torch
@@ -21,16 +22,23 @@ LongTensor = torch.cuda.LongTensor if torch.cuda.is_available() else \
              torch.LongTensor
 
 
-
 class DQN(object):
 
-    def __init__(self, model, optimizer, target_model=None, 
-                 replay_size=1000, batch_size=32,
+    def __init__(self, model, optimizer, target_model = None, 
+                 double_q_learning = False, replay_size=10000, batch_size=32,
                  gamma=0.95, eps_start=0.9, eps_end=0.05, eps_decay=200):
         """Initialize a DQN from a network model."""
 
         self.model = model
-        self.target_model = target_model # for double q learning 
+
+        # initalize target Q function
+        self.target_model = target_model
+        if self.target_model is None:
+            self.target_model = copy.deepcopy(self.model)
+        self.target_model.load_state_dict(self.model.state_dict())
+        self.target_model.eval()
+
+        self.double_q_learning = double_q_learning
 
         self.optimizer = optimizer
         self.replay_memory = deque(maxlen = replay_size)
@@ -38,9 +46,10 @@ class DQN(object):
 
         # hyperparameters
         self.gamma = gamma
-        self.eps_start = eps_start
+        self.eps_current = self.eps_start = eps_start
         self.eps_end = eps_end
         self.eps_decay = eps_decay
+        self.eps_steps = 0
 
     
     def update(self):
@@ -72,22 +81,21 @@ class DQN(object):
         next_state_values = Variable(
                 torch.zeros(self.batch_size).type(FloatTensor))
 
-        if self.target_model is not None: # double q learning
+        if self.double_q_learning: 
             # use online network to find best actions
             best_actions = self.model(non_final_next_states).max(1)[1].unsqueeze(1)
             # use target network to determine the values
             target_state_values = self.target_model(non_final_next_states)
             next_state_values[non_final_mask] = \
-                target_state_values.gather(1, best_actions)
+                target_state_values.gather(1, best_actions).squeeze(1)
         else:
             next_state_values[non_final_mask] = \
-                self.model(non_final_next_states).max(1)[0]
+                self.target_model(non_final_next_states).max(1)[0]
 
-
-        next_state_values.volatile = False
-        
         expected_state_action_values = next_state_values * self.gamma + \
                                                                 reward_batch
+        # undo volatiability
+        expected_state_action_values = Variable(expected_state_action_values.data)
 
         # compute loss based on Bellman's equation
         loss = F.mse_loss(state_action_values, expected_state_action_values)
@@ -95,8 +103,6 @@ class DQN(object):
         # optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-        #for param in self.model.parameters():
-        #    param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
 
 
@@ -105,23 +111,37 @@ class DQN(object):
         self.target_model.load_state_dict(self.model.state_dict())
         
 
-    def remember(self, *args):
+    def remember(self, *trans):
         """Store a transition in the replay memory."""
 
-        self.replay_memory.append(Transition(*args))
+        state, action, next_state, reward = trans
+
+        # convert to tensors
+        state = FloatTensor(state).unsqueeze(0)
+        action = LongTensor([action]).unsqueeze(0)
+        if next_state is not None:
+            next_state = FloatTensor(next_state).unsqueeze(0)
+        reward = FloatTensor([reward])
+
+        self.replay_memory.append(Transition(state, action, next_state, reward))
 
 
-    def select_action(self, state, time):
+    def select_action(self, state, deterministic=False):
         """Choose most optimal action for a given state."""
 
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-                math.exp(-1 * time / self.eps_decay)
+        self.eps_current = self.eps_start - \
+            float(self.eps_steps) / self.eps_decay * (self.eps_start - self.eps_end)
+        self.eps_current = max(self.eps_current, self.eps_end)
+        self.eps_steps += 1
 
-        if random.random() > eps_threshold:
+        # convert state to tensor
+        state = FloatTensor(state).unsqueeze(0)
+
+        if deterministic or random.random() > self.eps_current:
             q_s = self.model(Variable(state, volatile=True).type(FloatTensor))
-            return q_s.data.max(1)[1].view(1, 1)
+            return q_s.data.max(1)[1][0]
         else:
-            return LongTensor([[random.randrange(self.model.output_size)]])
+            return random.randrange(self.model.output_size)
 
 
     def save_model(self, path):
