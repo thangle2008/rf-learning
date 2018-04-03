@@ -7,8 +7,8 @@ import gym
 import torch
 import torch.optim as optim
 
-from simplenet import SimpleANN
-from dqn import Transition, DQN
+from networks.simplenet import SimpleANN
+from agents.dqn import Transition, DQN
 
 TOTAL_STEPS = 80000
 TARGET_UPDATE_STEPS = 300
