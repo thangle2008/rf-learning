@@ -141,7 +141,7 @@ class DQN(object):
             q_s = self.model(Variable(state, volatile=True).type(FloatTensor))
             return q_s.data.max(1)[1][0]
         else:
-            return random.randrange(self.model.output_size)
+            return random.randrange(self.model.num_actions)
 
 
     def save_model(self, path):
