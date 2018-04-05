@@ -40,7 +40,7 @@ def main():
     optimizer = optim.Adam(model.parameters())
 
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
-            double_q_learning=True, eps_start=1.0, eps_end=0.05, 
+            double_q_learning=False, eps_start=1.0, eps_end=0.05, 
             eps_decay=10000, replay_size=10000)
 
     # initialize state

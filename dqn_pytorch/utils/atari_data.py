@@ -49,3 +49,9 @@ class AtariEnvWrapper(object):
         self.state[self.frame] = self.preprocessing(next_state)
         self.frame = (self.frame + 1) % self.num_frames
         return np.asarray(self.state, dtype=np.float32), reward, done, info
+
+
+    def render(self):
+        """Draw current screen image."""
+
+        self.env.render()

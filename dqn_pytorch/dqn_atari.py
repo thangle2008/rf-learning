@@ -50,6 +50,7 @@ def main():
     episode = 1
 
     for t in range(TOTAL_STEPS):
+        env.render()
         # pick an action
         action = dqn.select_action(state)
         next_state, reward, done, _ = env.step(action)
