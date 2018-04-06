@@ -1,6 +1,5 @@
 from __future__ import print_function, division
 
-import argparse
 from collections import deque
 import gym
 
@@ -10,6 +9,7 @@ import torch.optim as optim
 from networks.simplenet import AtariConvNet
 from agents.dqn import Transition, DQN
 from utils.atari_data import AtariEnvWrapper
+from core import simul
 
 TOTAL_STEPS = 10000000
 TARGET_UPDATE_STEPS = 10000
@@ -26,7 +26,7 @@ def make_cuda(model):
 
 def main():
     # set up environment
-    env = AtariEnvWrapper('Tennis-v0', seed = 123456)
+    env = AtariEnvWrapper('MsPacman-v0', seed = 123456)
 
     # set up network model
     in_channels = env.num_frames
@@ -44,58 +44,8 @@ def main():
             double_q_learning=True, eps_start=1.0, eps_end=0.1, 
             eps_decay=1000000, replay_size=100000)
 
-    # initialize state
-    current_reward = 0.0
-    state = env.reset()
-    episode = 1
-
-    for t in range(TOTAL_STEPS):
-        env.render()
-        # pick an action
-        action = dqn.select_action(state)
-        next_state, reward, done, _ = env.step(action)
-        if done: 
-            next_state = None
-
-        # clip reward range
-        if reward > 0:
-            reward = 1
-        elif reward < 0:
-            reward = -1
-        current_reward += reward
-
-        # store transition in replay memory
-        dqn.remember(state, action, next_state, reward)
-        
-        # optimize if there is enough in replay memory
-        dqn.update()
-
-        # update the target network after fixed steps
-        if t % TARGET_UPDATE_STEPS == 0:
-            dqn.update_target_network()
-
-        # move onto next state
-        state = next_state
-        if done: 
-            print("Episode {} at t = {}/{}: reward = {}, eps = {:.3f}".format(
-                episode, t, TOTAL_STEPS, current_reward, dqn.eps_current))
-            state = env.reset()
-            current_reward = 0.0
-            episode += 1
-
-    # test the model in 5 episodes
-    for e in range(5):
-        state = env.reset()
-        done = False
-        current_reward = 0
-        while not done:
-            env.render()
-            action = dqn.select_action(state, deterministic=True)
-            next_state, reward, done, _ = env.step(action)
-            current_reward += reward
-            state = next_state
-
-        print("Episode {}/5: reward = {}".format(e + 1, current_reward))
+    simul.train(dqn, env, num_steps=TOTAL_STEPS, target_update_steps=TARGET_UPDATE_STEPS)
+    simul.test(dqn, env, num_episodes=5)
 
     env.close()
 

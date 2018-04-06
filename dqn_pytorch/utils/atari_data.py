@@ -55,3 +55,9 @@ class AtariEnvWrapper(object):
         """Draw current screen image."""
 
         self.env.render()
+
+
+    def close(self):
+        """Close the environment."""
+
+        self.env.close()
