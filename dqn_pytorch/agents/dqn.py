@@ -56,30 +56,36 @@ class DQN(object):
         """Sample a batch of transitions from replay memory and train the network on it."""
 
         if (len(self.replay_memory) < self.batch_size):
-            return
+            return None
 
         transitions = random.sample(self.replay_memory, self.batch_size)
         batch = Transition(*zip(*transitions))
 
+        # convert to tensors
+        state_batch = tuple(FloatTensor(s).unsqueeze(0) for s in batch.state)
+        action_batch = tuple(LongTensor([a]).unsqueeze(0) for a in batch.action)
+        reward_batch = tuple(FloatTensor([r]) for r in batch.reward)
+
         # extract contents from this batch
-        state_batch = Variable(torch.cat(batch.state))
-        action_batch = Variable(torch.cat(batch.action))
-        reward_batch = Variable(torch.cat(batch.reward))
+        state_batch = Variable(torch.cat(state_batch))
+        action_batch = Variable(torch.cat(action_batch))
+        reward_batch = Variable(torch.cat(reward_batch))
+
+        # get non-final next states
+        non_final_mask = ByteTensor(tuple(map(lambda s: s is not None,
+                                              batch.next_state)))
+        
+        non_final_next_states = \
+            Variable(torch.cat([FloatTensor(s).unsqueeze(0) for s in 
+                                batch.next_state if s is not None]), 
+                     volatile=True)
 
         # compute Q(s_t) and use that to gather Q(s_t, a) by picking
         # the correct actions
         state_action_values = self.model(state_batch).gather(1, action_batch)
 
-        # get non-final states
-        non_final_mask = ByteTensor(tuple(map(lambda s: s is not None,
-                                              batch.next_state)))
-        
-        non_final_next_states = Variable(torch.cat([s for s in batch.next_state
-                                                    if s is not None]),
-                                         volatile=True)
-
         next_state_values = Variable(
-                torch.zeros(self.batch_size).type(FloatTensor))
+            torch.zeros(self.batch_size).type(FloatTensor))
 
         if self.double_q_learning: 
             # use online network to find best actions
@@ -104,6 +110,7 @@ class DQN(object):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        return loss.data[0]
 
 
     def update_target_network(self):
@@ -114,16 +121,7 @@ class DQN(object):
     def remember(self, *trans):
         """Store a transition in the replay memory."""
 
-        state, action, next_state, reward = trans
-
-        # convert to tensors
-        state = FloatTensor(state).unsqueeze(0)
-        action = LongTensor([action]).unsqueeze(0)
-        if next_state is not None:
-            next_state = FloatTensor(next_state).unsqueeze(0)
-        reward = FloatTensor([reward])
-
-        self.replay_memory.append(Transition(state, action, next_state, reward))
+        self.replay_memory.append(Transition(*trans))
 
 
     def select_action(self, state, deterministic=False):

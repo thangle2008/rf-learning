@@ -26,7 +26,7 @@ def make_cuda(model):
 
 def main():
     # set up environment
-    env = AtariEnvWrapper('MsPacman-v0', seed = 123456)
+    env = AtariEnvWrapper('Pong-v0', seed = 123456)
 
     # set up network model
     in_channels = env.num_frames
@@ -41,10 +41,12 @@ def main():
     optimizer = optim.RMSprop(model.parameters(), lr=0.00025, alpha=0.95, eps=0.01)
 
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
-            double_q_learning=True, eps_start=1.0, eps_end=0.1, 
+            double_q_learning=False, eps_start=1.0, eps_end=0.1, 
             eps_decay=1000000, replay_size=100000)
 
-    simul.train(dqn, env, num_steps=TOTAL_STEPS, target_update_steps=TARGET_UPDATE_STEPS)
+    simul.train(dqn, env, num_steps=TOTAL_STEPS, 
+                target_update_steps=TARGET_UPDATE_STEPS,
+                save_path='./trained_models/model.pkl')
     simul.test(dqn, env, num_episodes=5)
 
     env.close()
