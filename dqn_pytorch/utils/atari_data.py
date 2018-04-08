@@ -27,9 +27,7 @@ class AtariEnvWrapper(object):
         # remove rgb channel and resize to 84x84
         screen = rgb2grey(screen)
         screen = resize(screen, self.screen_size)
-        # normalize
-        screen = screen.astype(np.float32) / 255.0
-        return screen
+        return screen.astype(np.float32)
 
     
     def reset(self):

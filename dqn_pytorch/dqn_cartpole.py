@@ -1,13 +1,12 @@
 from __future__ import print_function, division
 
-from collections import deque
 import gym
 
 import torch
 import torch.optim as optim
 
 from networks.simplenet import SimpleANN
-from agents.dqn import Transition, DQN
+from agents.dqn import  DQN
 from core import simul
 
 TOTAL_STEPS = 80000

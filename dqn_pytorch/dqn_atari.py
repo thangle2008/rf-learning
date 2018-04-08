@@ -1,13 +1,10 @@
 from __future__ import print_function, division
 
-from collections import deque
-import gym
-
 import torch
 import torch.optim as optim
 
 from networks.simplenet import AtariConvNet
-from agents.dqn import Transition, DQN
+from agents.dqn import DQN
 from utils.atari_data import AtariEnvWrapper
 from core import simul
 
@@ -42,7 +39,7 @@ def main():
 
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
             double_q_learning=False, eps_start=1.0, eps_end=0.1, 
-            eps_decay=1000000, replay_size=100000)
+            eps_decay=1000000, replay_size=1000000)
 
     simul.train(dqn, env, num_steps=TOTAL_STEPS, 
                 target_update_steps=TARGET_UPDATE_STEPS,
