@@ -1,9 +1,9 @@
 from __future__ import division, print_function
 
-import random
 import math
 import copy
 from collections import deque, namedtuple
+import random
 
 import torch
 from torch.autograd import Variable
@@ -134,7 +134,7 @@ class DQN(object):
         # convert state to tensor
         state = FloatTensor(state).unsqueeze(0)
 
-        if deterministic or random.random() > self.eps_current:
+        if deterministic or random.random() >= self.eps_current:
             q_s = self.model(Variable(state, volatile=True).type(FloatTensor))
             return q_s.data.max(1)[1][0]
         else:
@@ -144,7 +144,7 @@ class DQN(object):
     def random_action(self):
         """Random an action."""
 
-        return random.randrange(self.model.num_actions)
+        return random.randrange(0, self.model.num_actions)
 
 
     def save_model(self, path):

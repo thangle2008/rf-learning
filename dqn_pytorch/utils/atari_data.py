@@ -1,6 +1,7 @@
 import gym
 
 import numpy as np
+import random
 
 from skimage.color import rgb2grey
 from skimage.transform import resize
@@ -39,9 +40,8 @@ class AtariEnvWrapper(EnvWrapper):
         self.noop_max = noop_max
         self.skip = skip
         # state is now a stack of frames (top is the newest)
-        self.state = np.zeros((num_frames,) + screen_size, dtype=np.float32)
-        self.frame = 0
-    
+        self.state_buffer = []
+
 
     def preprocessing(self, screen):
         """Preprocess a screen image."""
@@ -49,7 +49,7 @@ class AtariEnvWrapper(EnvWrapper):
         # remove rgb channel and resize to 84x84
         screen = rgb2grey(screen)
         screen = resize(screen, self.screen_size)
-        return screen.astype(np.float32)
+        return np.asarray([screen], dtype=np.float32)
 
     
     def reset(self):
@@ -58,13 +58,12 @@ class AtariEnvWrapper(EnvWrapper):
         screen = self.env.reset()
 
         # perform no-op
-        for _ in range(np.random.randint(0, self.noop_max)):
+        for _ in range(random.randrange(0, self.noop_max + 1)):
             screen = self.env.step(0)[0]
 
         screen = self.preprocessing(screen)
-        for i in range(self.num_frames):
-            self.state[i] = screen
-        return np.asarray(self.state, dtype=np.float32)
+        self.state_buffer = [screen] * self.num_frames
+        return np.vstack(self.state_buffer)
 
 
     def step(self, action):
@@ -76,7 +75,10 @@ class AtariEnvWrapper(EnvWrapper):
             total_reward += reward
             if done:
                 break
-        # update frame
-        self.state[self.frame] = self.preprocessing(screen)
-        self.frame = (self.frame + 1) % self.num_frames
-        return np.asarray(self.state, dtype=np.float32), total_reward, done, info
+        # update screen stack
+        screen = self.preprocessing(screen)
+        self.state_buffer.pop(0)
+        self.state_buffer.append(screen)
+
+        state = np.vstack(self.state_buffer)
+        return state, total_reward, done, info
