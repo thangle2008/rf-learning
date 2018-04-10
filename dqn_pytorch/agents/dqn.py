@@ -56,7 +56,7 @@ class DQN(object):
         """Sample a batch of transitions from replay memory and train the network on it."""
 
         if (len(self.replay_memory) < self.batch_size):
-            return None
+            return
 
         transitions = random.sample(self.replay_memory, self.batch_size)
         batch = Transition(*zip(*transitions))
@@ -110,7 +110,6 @@ class DQN(object):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return loss.data[0]
 
 
     def update_target_network(self):
@@ -139,7 +138,13 @@ class DQN(object):
             q_s = self.model(Variable(state, volatile=True).type(FloatTensor))
             return q_s.data.max(1)[1][0]
         else:
-            return random.randrange(self.model.num_actions)
+            return self.random_action()
+
+
+    def random_action(self):
+        """Random an action."""
+
+        return random.randrange(self.model.num_actions)
 
 
     def save_model(self, path):

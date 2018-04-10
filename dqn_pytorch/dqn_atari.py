@@ -23,7 +23,8 @@ def make_cuda(model):
 
 def main():
     # set up environment
-    env = AtariEnvWrapper('Pong-v0', seed = 123456)
+    env = AtariEnvWrapper('PongNoFrameskip-v4', noop_max=30, skip=4,
+                          seed=123456)
 
     # set up network model
     in_channels = env.num_frames
@@ -42,9 +43,9 @@ def main():
             eps_decay=1000000, replay_size=1000000)
 
     simul.train(dqn, env, num_steps=TOTAL_STEPS, 
+                exploration_steps=50000,
                 target_update_steps=TARGET_UPDATE_STEPS,
                 save_path='./trained_models/model.pkl')
-    simul.test(dqn, env, num_episodes=5)
 
     env.close()
 
