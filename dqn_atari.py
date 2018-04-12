@@ -5,8 +5,8 @@ import torch.optim as optim
 
 from networks.simplenet import AtariConvNet
 from agents.dqn import DQN
-from utils.atari_data import AtariEnvWrapper
-from core import simul
+from utils import simul
+from utils.env_wrapper import AtariEnv
 
 TOTAL_STEPS = 10000000
 TARGET_UPDATE_STEPS = 10000
@@ -23,8 +23,8 @@ def make_cuda(model):
 
 def main():
     # set up environment
-    env = AtariEnvWrapper('PongNoFrameskip-v4', noop_max=30, skip=4,
-                          seed=123456)
+    env = AtariEnv('PongNoFrameskip-v4', noop_max=30, skip=4, 
+                   num_frames=4, seed=123456)
 
     # set up network model
     in_channels = env.num_frames
@@ -43,7 +43,7 @@ def main():
             eps_decay=1000000, replay_size=1000000)
 
     simul.train(dqn, env, num_steps=TOTAL_STEPS, 
-                exploration_steps=50000,
+                exploration_steps=1000000,
                 target_update_steps=TARGET_UPDATE_STEPS,
                 save_path='./trained_models/model.pkl')
 

@@ -9,9 +9,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-
-Transition = namedtuple('Transition', 
-                        ['state', 'action', 'next_state', 'reward']) 
+from .core import Transition
 
 
 ByteTensor = torch.cuda.ByteTensor if torch.cuda.is_available() else \

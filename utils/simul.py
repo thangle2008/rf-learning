@@ -42,9 +42,9 @@ def train(agent, env, num_steps=10000, target_update_steps=200,
         # move onto next state
         state = next_state
         if done: 
-            print("Episode {} at t = {}/{}: reward = {}, eps = {:.3f}, steps = {}".format(
+            print("Episode {} at t = {}/{}: reward = {}, eps = {:.3f}, steps = {}, replay_size = {}".format(
                 episode, t, num_steps, current_reward, agent.eps_current,
-                t - last_t + 1))
+                t - last_t + 1, len(agent.replay_memory)))
             if save_path and exploration_steps == 0:
                 agent.save_model(save_path)
             # reset everything
