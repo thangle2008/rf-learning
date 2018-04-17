@@ -54,6 +54,7 @@ class ReplayMemory(object):
 
 
     def remember(self, state, action, reward):
+        """Store a new observation. (TODO: should we have a terminal flag here?)."""
 
         self.states.append(state)
         self.actions.append(action)
@@ -71,8 +72,10 @@ class ReplayMemory(object):
 
         for i in range(self.history_length - 1):
             next_idx = idx - i
+            if next_idx < 0 or next_idx >= len(self.states):
+                break
 
-            if self.states[next_idx]:
+            if self.states[next_idx] is not None:
                 res.insert(0, self.states[next_idx])
             else:
                 break
@@ -81,39 +84,42 @@ class ReplayMemory(object):
         while len(res) < self.history_length:
             res.insert(0, self._get_dummy_state(current_state)) 
 
+        for i in range(self.history_length):
+            res[i] = self._wrap_state(res[i])
+
+        res = np.vstack(res)
+        assert res.dtype == current_state.dtype
         return res
 
+    
+    def _wrap_state(self, state):
 
-    def _copy_state(self, state):
-
-        if isinstance(state, np.ndarray):
-            return np.copy(state)
-        else:
-            return copy.deepcopy(state)
+        return np.asarray([state], dtype=state.dtype)
 
 
     def _get_dummy_state(self, current_state):
 
-        if isinstance(current_state, np.ndarray):
-            return np.zeros(current_state.shape, dtype=current_state.dtype)
-        else:
-            return 0
+        return np.zeros(current_state.shape, dtype=current_state.dtype)
 
 
     def get_recent_states(self, current_state):
+        """Stack the most recent states with the current_state."""
 
         return self._get_states_from_idx(len(self.states)-1, current_state)
 
     
     def sample(self, batch_size):
-
-        batch = []
+        """Sample a batch of state stacks."""
 
         # Sample the indexes for the current states (last state in each stack
         # frame). We do not want the first few states since we want to fill
         # the stack. We also do not want the last state since we do not know 
         # what the next state will be yet.
-        assert len(self.states) >= self.history_length + 1 + batch_size
+        if len(self.states) - (self.history_length - 1) - 1 < batch_size:
+            return None
+
+        transitions = []
+
         batch_idxs = random.sample(
             range(self.history_length - 1, len(self.states) - 1), batch_size)
         
@@ -130,17 +136,23 @@ class ReplayMemory(object):
 
             # get next stack
             next_stack = None
-            if self.states[idx+1]:
-                next_stack = [self._copy_state(s) for s in s_stack[1:]]
-                next_stack.append(self.states[idx + 1])
+            if self.states[idx+1] is not None:
+                next_stack = np.zeros(s_stack.shape, dtype=s_stack.dtype)
+                next_stack[0:self.history_length-1] = s_stack[1:]
+                next_stack[-1] = self.states[idx+1]
+                assert np.all(next_stack[0:self.history_length-1] == s_stack[1:])
 
             assert len(s_stack) == self.history_length
             assert next_stack is None or len(next_stack) == self.history_length
 
             trans = Transition(s_stack, self.actions[idx], next_stack,
                                self.rewards[idx])
-            batch.append(trans)
+            transitions.append(trans)
 
 
-        assert len(batch) == batch_size
+        assert len(transitions) == batch_size
+        
+        # separate state, action, reward, next_state batch
+        batch = Transition(*zip(*transitions))
+
         return batch

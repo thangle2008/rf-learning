@@ -3,8 +3,6 @@ import gym
 import numpy as np
 import random
 
-from PIL import Image
-
 class EnvWrapper(object):
 
     def __init__(self, env_name, seed=None):
@@ -28,37 +26,24 @@ class EnvWrapper(object):
 
 class AtariEnv(EnvWrapper):
 
-    def __init__(self, env_name, screen_size=(84, 84), num_frames=4, 
-                 noop_max=30, skip=4, seed=None):
+    def __init__(self, env_name, noop_max=30, skip=4, seed=None):
         
         super(AtariEnv, self).__init__(env_name, seed)
-        self.screen_size = screen_size
         self.num_actions = self.env.action_space.n
-        self.num_frames = num_frames
         self.noop_max = noop_max
         self.skip = skip
-        # state is now a stack of frames (top is the newest)
-        self.state_buffer = []
     
     
-    def preprocessing(self, screen):
-        s = Image.fromarray(screen)
-        s = s.resize(self.screen_size).convert('L')
-        s = np.array(s)
-        return np.asarray([s], dtype=np.uint8)
-
-
     def reset(self):
         """Reset the environment and return a starting state."""
 
         screen = self.env.reset()
 
-        # perform no-op
+        # perform no-op to introduce stochasticity 
         for _ in range(random.randrange(0, self.noop_max + 1)):
             screen = self.env.step(0)[0]
 
-        self.state_buffer = [self.preprocessing(screen)] * self.num_frames
-        return np.vstack(self.state_buffer)
+        return screen
 
 
     def step(self, action):
@@ -70,9 +55,5 @@ class AtariEnv(EnvWrapper):
             total_reward += reward
             if done:
                 break
-        # update screen stack
-        self.state_buffer.pop(0)
-        self.state_buffer.append(self.preprocessing(screen))
-        state = np.vstack(self.state_buffer)
 
-        return state, total_reward, done, info
+        return screen, total_reward, done, info

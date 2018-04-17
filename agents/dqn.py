@@ -9,8 +9,6 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-from .core import Transition
-
 
 ByteTensor = torch.cuda.ByteTensor if torch.cuda.is_available() else \
              torch.ByteTensor
@@ -22,8 +20,7 @@ LongTensor = torch.cuda.LongTensor if torch.cuda.is_available() else \
 
 class DQN(object):
 
-    def __init__(self, model, optimizer, target_model = None, 
-                 double_q_learning = False, replay_size=10000, batch_size=32,
+    def __init__(self, model, optimizer, target_model = None, double_q_learning = False, 
                  gamma=0.95, eps_start=0.9, eps_end=0.05, eps_decay=200):
         """Initialize a DQN from a network model."""
 
@@ -36,28 +33,25 @@ class DQN(object):
         self.target_model.load_state_dict(self.model.state_dict())
         self.target_model.eval()
 
+        # some flags
         self.double_q_learning = double_q_learning
 
+        # optimizer
         self.optimizer = optimizer
-        self.replay_memory = deque(maxlen = replay_size)
-        self.batch_size = batch_size
 
         # hyperparameters
         self.gamma = gamma
+
+        # eps greedy policy
         self.eps_current = self.eps_start = eps_start
         self.eps_end = eps_end
         self.eps_decay = eps_decay
         self.eps_steps = 0
 
     
-    def update(self):
-        """Sample a batch of transitions from replay memory and train the network on it."""
-
-        if (len(self.replay_memory) < self.batch_size):
-            return
-
-        transitions = random.sample(self.replay_memory, self.batch_size)
-        batch = Transition(*zip(*transitions))
+    def update(self, batch):
+        """Train the agent using a batch of transitions."""
+        batch_size = len(batch.state)
 
         # convert to tensors
         state_batch = tuple(FloatTensor(s).unsqueeze(0) for s in batch.state)
@@ -83,7 +77,7 @@ class DQN(object):
         state_action_values = self.model(state_batch).gather(1, action_batch)
 
         next_state_values = Variable(
-            torch.zeros(self.batch_size).type(FloatTensor))
+            torch.zeros(batch_size).type(FloatTensor))
 
         if self.double_q_learning: 
             # use online network to find best actions
@@ -113,12 +107,6 @@ class DQN(object):
     def update_target_network(self):
         """Update target network's weights."""
         self.target_model.load_state_dict(self.model.state_dict())
-        
-
-    def remember(self, *trans):
-        """Store a transition in the replay memory."""
-
-        self.replay_memory.append(Transition(*trans))
 
 
     def select_action(self, state, deterministic=False):
