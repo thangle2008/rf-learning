@@ -58,11 +58,6 @@ class DQNSimulator(BaseSimulator):
                 replay.remember(processed_state, action, reward)
             else:
                 replay.remember(state, action, reward)
-
-            if done:
-                next_state = None
-                # store this in replay memory also with dummy action and reward
-                replay.remember(None, -1, -1)
             
             if exploration_steps > 0:
                 exploration_steps -= 1
@@ -85,12 +80,16 @@ class DQNSimulator(BaseSimulator):
             # move onto next state
             state = next_state
             if done: 
+                # remember this last state with dummy action and reward
+                replay.remember(None, -1, -1)
+
                 print(("Episode {} at t = {}/{}: reward = {}, eps = {:.3f}, steps = {}, "
                        "replay_size = {}").format(
                     episode, t, num_steps, current_reward, agent.eps_current,
                     t - last_t + 1, replay.size()))
                 if save_path and exploration_steps == 0:
                     agent.save_model(save_path)
+
                 # reset everything
                 state = env.reset()
                 current_reward = 0.0

@@ -65,7 +65,9 @@ def main():
     replay = ReplayMemory(200000, history_length=HISTORY_LENGTH)
 
     simul = DQNSimulator(dqn, env, replay)
-    simul.train(TOTAL_STEPS, target_update_steps=TARGET_UPDATE_STEPS, batch_size=32,
+    simul.train(TOTAL_STEPS, 
+                target_update_steps=TARGET_UPDATE_STEPS, 
+                batch_size=32,
                 exploration_steps=EXPLORATION_STEPS, 
                 before_replay_process_func=before_replay_process,
                 process_func=process)
