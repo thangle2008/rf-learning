@@ -20,8 +20,9 @@ class DQNSimulator(BaseSimulator):
         self.replay = replay
 
 
-    def train(self, num_steps, target_update_steps=200, exploration_steps=0, batch_size=32,
-              process_func=None, before_replay_process_func=None, save_path=None):
+    def train(self, num_steps, target_update_steps=200, exploration_steps=0, 
+              batch_size=32, process_func=None, before_replay_process_func=None, 
+              save_path=None, save_steps=1):
 
         # convenient abbr
         agent = self.agent
@@ -33,11 +34,12 @@ class DQNSimulator(BaseSimulator):
         state = env.reset()
         episode = 1
 
-        last_t = 0
-        for t in range(num_steps):
-            # stack current state with previous states to choose an action
+        last_t = 1
+        for t in range(1, num_steps + 1):
             if before_replay_process_func:
                 state = before_replay_process_func(state)
+
+            # stack current state with previous states to choose an action
             s_stack = replay.get_recent_states(state)
 
             # pick an action
@@ -48,16 +50,11 @@ class DQNSimulator(BaseSimulator):
                 else agent.random_action()
             next_state, reward, done, _ = env.step(action)
 
-            # clip reward range
-            reward = np.sign(reward)
+            # accumulate total reward for the current episode
             current_reward += reward
 
             # store recent observation in replay memory
-            if before_replay_process_func:
-                processed_state = before_replay_process_func(state)
-                replay.remember(processed_state, action, reward)
-            else:
-                replay.remember(state, action, reward)
+            replay.remember(state, action, reward)
             
             if exploration_steps > 0:
                 exploration_steps -= 1
@@ -79,6 +76,8 @@ class DQNSimulator(BaseSimulator):
 
             # move onto next state
             state = next_state
+
+            # end episode
             if done: 
                 # remember this last state with dummy action and reward
                 replay.remember(None, -1, -1)
@@ -87,11 +86,13 @@ class DQNSimulator(BaseSimulator):
                        "replay_size = {}").format(
                     episode, t, num_steps, current_reward, agent.eps_current,
                     t - last_t + 1, replay.size()))
-                if save_path and exploration_steps == 0:
-                    agent.save_model(save_path)
 
                 # reset everything
                 state = env.reset()
                 current_reward = 0.0
                 episode += 1
                 last_t = t
+
+            # save model periodically
+            if save_path and t % save_steps == 0:
+                agent.save_model(save_path)

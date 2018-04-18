@@ -130,6 +130,8 @@ class ReplayMemory(object):
                 idx = random.randrange(self.history_length - 1,
                                        len(self.states) - 1)
             state = self.states[idx]
+            action = self.actions[idx]
+            reward = self.rewards[idx]
             
             # fill the stack with previous states
             s_stack = self._get_states_from_idx(idx-1, state)
@@ -145,8 +147,7 @@ class ReplayMemory(object):
             assert len(s_stack) == self.history_length
             assert next_stack is None or len(next_stack) == self.history_length
 
-            trans = Transition(s_stack, self.actions[idx], next_stack,
-                               self.rewards[idx])
+            trans = Transition(s_stack, action, next_stack, reward)
             transitions.append(trans)
 
 

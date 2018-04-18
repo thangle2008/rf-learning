@@ -33,7 +33,7 @@ def process(state):
     if state is None:
         return None
     assert state.dtype == np.uint8
-    assert state.shape == (4, 84, 84)
+    assert state.shape == (HISTORY_LENGTH,) + SCREEN_SIZE
     return state.astype(np.float32) / 255.0
 
 
@@ -61,8 +61,8 @@ def main():
     # set up deep q network
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
             double_q_learning=False, eps_start=1.0, eps_end=0.1, 
-            eps_decay=1000000)
-    replay = ReplayMemory(200000, history_length=HISTORY_LENGTH)
+            eps_decay=500000)
+    replay = ReplayMemory(500000, history_length=HISTORY_LENGTH)
 
     simul = DQNSimulator(dqn, env, replay)
     simul.train(TOTAL_STEPS, 
@@ -70,7 +70,9 @@ def main():
                 batch_size=32,
                 exploration_steps=EXPLORATION_STEPS, 
                 before_replay_process_func=before_replay_process,
-                process_func=process)
+                process_func=process,
+                save_path='./trained_models/atari_model.pkl',
+                save_steps=50000)
 
     env.close()
 

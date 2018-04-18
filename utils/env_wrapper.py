@@ -3,6 +3,7 @@ import gym
 import numpy as np
 import random
 
+
 class EnvWrapper(object):
 
     def __init__(self, env_name, seed=None):
@@ -41,7 +42,9 @@ class AtariEnv(EnvWrapper):
 
         # perform no-op to introduce stochasticity 
         for _ in range(random.randrange(0, self.noop_max + 1)):
-            screen = self.env.step(0)[0]
+            screen, _, done, _ = self.env.step(0)
+            if done:
+                screen = self.env.reset()
 
         return screen
 
@@ -56,4 +59,4 @@ class AtariEnv(EnvWrapper):
             if done:
                 break
 
-        return screen, total_reward, done, info
+        return screen, np.sign(total_reward), done, info
