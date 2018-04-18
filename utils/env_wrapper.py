@@ -4,11 +4,12 @@ import numpy as np
 import random
 
 
-class EnvWrapper(object):
+class BasicEnv(object):
 
     def __init__(self, env_name, seed=None):
 
         self.env = gym.make(env_name)
+        self.num_actions = self.env.action_space.n
         if seed:
             self.env.seed(seed)
 
@@ -25,12 +26,22 @@ class EnvWrapper(object):
         self.env.close()
 
 
-class AtariEnv(EnvWrapper):
+    def step(self, action):
+
+        state, reward, done, info = self.env.step(action)
+        return state, np.sign(reward), done, info
+
+
+    def reset(self):
+
+        return self.env.reset()
+
+
+class AtariEnv(BasicEnv):
 
     def __init__(self, env_name, noop_max=30, skip=4, seed=None):
         
         super(AtariEnv, self).__init__(env_name, seed)
-        self.num_actions = self.env.action_space.n
         self.noop_max = noop_max
         self.skip = skip
     

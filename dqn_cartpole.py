@@ -1,16 +1,18 @@
 from __future__ import print_function, division
 
-import gym
-
 import torch
 import torch.optim as optim
 
 from networks.simplenet import SimpleANN
-from agents.dqn import  DQN
-from core import simul
+from agents.simul import DQNSimulator
+from agents.dqn import DQN
+from utils.env_wrapper import BasicEnv
+from utils.memory import ReplayMemory
+
 
 TOTAL_STEPS = 80000
 TARGET_UPDATE_STEPS = 300
+EXPLORATION_STEPS = 2000
 
 
 def make_cuda(model):
@@ -20,12 +22,11 @@ def make_cuda(model):
 
 def main():
     # set up environment
-    env = gym.make('CartPole-v1')
-    env.seed(123456)
+    env = BasicEnv('CartPole-v1', seed=123456)
 
     # set up network model
-    input_size = env.observation_space.shape[0]
-    output_size = env.action_space.n 
+    input_size = 4
+    output_size = env.num_actions
 
     model = SimpleANN(input_size, output_size)
     make_cuda(model)
@@ -37,10 +38,16 @@ def main():
 
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
             double_q_learning=True, eps_start=1.0, eps_end=0.05, 
-            eps_decay=10000, replay_size=10000)
+            eps_decay=10000)
+    replay = ReplayMemory(10000, history_length=1)
 
-    simul.train(dqn, env, num_steps=TOTAL_STEPS, target_update_steps=TARGET_UPDATE_STEPS) 
-    simul.test(dqn, env, num_episodes=5, verbose=1)
+    simul = DQNSimulator(dqn, env, replay)
+    simul.train(TOTAL_STEPS, 
+                target_update_steps=TARGET_UPDATE_STEPS, 
+                batch_size=32,
+                exploration_steps=EXPLORATION_STEPS, 
+                save_path='./trained_models/basic_model.pkl',
+                save_steps=200)
 
     env.close()
 
