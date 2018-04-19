@@ -141,5 +141,6 @@ class DQN(object):
 
     def load_model(self, path):
         """Load parameters to the model."""
-
-        self.model.load_state_dict(torch.load(path))
+        saved_state = torch.load(path, map_location=lambda storage, loc: storage)
+        self.model.load_state_dict(saved_state)
+        self.update_target_network()

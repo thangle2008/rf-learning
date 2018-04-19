@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import argparse
 
 import torch
 import torch.optim as optim
@@ -11,6 +12,10 @@ from agents.dqn import DQN
 from utils.env_wrapper import AtariEnv
 from utils.memory import ReplayMemory
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--test', dest='test_model_path')
+parser.add_argument('--env_name', dest='env_name', default="PongNoFrameskip-v4")
 
 # Training parameters
 TOTAL_STEPS = 10000000
@@ -42,9 +47,9 @@ def make_cuda(model):
         model.cuda()
 
 
-def main():
+def main(args):
     # set up environment
-    env = AtariEnv('PongNoFrameskip-v4', noop_max=30, skip=4, seed=123456)
+    env = AtariEnv(args.env_name, skip=4, seed=123456)
 
     # set up network model
     in_channels = HISTORY_LENGTH
@@ -62,19 +67,34 @@ def main():
     dqn = DQN(model, optimizer, target_model=target_model, gamma = 0.99,
             double_q_learning=False, eps_start=1.0, eps_end=0.1, 
             eps_decay=500000)
-    replay = ReplayMemory(500000, history_length=HISTORY_LENGTH)
 
-    simul = DQNSimulator(dqn, env, replay,
-                         before_replay_process_func=before_replay_process,
-                         after_replay_process_func=after_replay_process)
-    simul.train(TOTAL_STEPS, 
-                target_update_steps=TARGET_UPDATE_STEPS, 
-                batch_size=32,
-                exploration_steps=EXPLORATION_STEPS, 
-                save_path='./trained_models/atari_model.pkl',
-                save_steps=50000)
+    if args.test_model_path:
+        print("Testing...")
+        # load model
+        dqn.load_model(args.test_model_path)
+        # only need enough to stack frames
+        replay = ReplayMemory(HISTORY_LENGTH-1, history_length=HISTORY_LENGTH)
+        simul = DQNSimulator(dqn, env, replay,
+                             before_replay_process_func=before_replay_process,
+                             after_replay_process_func=after_replay_process)
+        simul.test(5, batch_size=32)
+    else:
+        print("Training...")
+        # make env stochastic
+        env.set_noop_max(30)
+        replay = ReplayMemory(500000, history_length=HISTORY_LENGTH)
+        simul = DQNSimulator(dqn, env, replay,
+                             before_replay_process_func=before_replay_process,
+                             after_replay_process_func=after_replay_process)
+        simul.train(TOTAL_STEPS, 
+                    target_update_steps=TARGET_UPDATE_STEPS, 
+                    batch_size=32,
+                    exploration_steps=EXPLORATION_STEPS, 
+                    save_path='./trained_models/atari_model.pkl',
+                    save_steps=50000)
 
     env.close()
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)

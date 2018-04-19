@@ -2,6 +2,7 @@ import gym
 
 import numpy as np
 import random
+import time
 
 
 class BasicEnv(object):
@@ -39,13 +40,23 @@ class BasicEnv(object):
 
 class AtariEnv(BasicEnv):
 
-    def __init__(self, env_name, noop_max=30, skip=4, seed=None):
+    def __init__(self, env_name, noop_max=0, skip=1, seed=None):
         
         super(AtariEnv, self).__init__(env_name, seed)
         self.noop_max = noop_max
         self.skip = skip
     
     
+    def set_noop_max(val):
+        
+        self.noop_max = val
+
+    
+    def set_frame_skip(val):
+        
+        self.skip = val
+
+
     def reset(self):
         """Reset the environment and return a starting state."""
 
@@ -60,11 +71,14 @@ class AtariEnv(BasicEnv):
         return screen
 
 
-    def step(self, action):
+    def step(self, action, test=False):
         """Perform an action and have the environment return a new state, reward, and status."""
 
         total_reward = 0.0
         for _ in range(self.skip):
+            if test:
+                self.env.render()
+                time.sleep(0.005)
             screen, reward, done, info = self.env.step(action)
             total_reward += reward
             if done:

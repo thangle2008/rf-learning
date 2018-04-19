@@ -38,7 +38,7 @@ class DQNSimulator(BaseSimulator):
             action = self.agent.select_action(s_stack, deterministic=test)
         else: 
             action = self.agent.random_action()
-        next_state, reward, done, _ = self.env.step(action)
+        next_state, reward, done, _ = self.env.step(action, test)
 
         # store recent observation in replay memory
         self.replay.remember(state, action, reward)
@@ -112,7 +112,6 @@ class DQNSimulator(BaseSimulator):
             total_reward = 0.0
             t = 0
             while True:
-                self.env.render()
                 t += 1
                 next_state, reward, done = self._one_step(state, 0, True)
                 state = next_state
