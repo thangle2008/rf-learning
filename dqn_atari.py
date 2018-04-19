@@ -29,7 +29,7 @@ def before_replay_process(screen):
     return np.asarray(s, dtype=np.uint8)
 
 
-def process(state):
+def after_replay_process(state):
     if state is None:
         return None
     assert state.dtype == np.uint8
@@ -64,13 +64,13 @@ def main():
             eps_decay=500000)
     replay = ReplayMemory(500000, history_length=HISTORY_LENGTH)
 
-    simul = DQNSimulator(dqn, env, replay)
+    simul = DQNSimulator(dqn, env, replay,
+                         before_replay_process_func=before_replay_process,
+                         after_replay_process_func=after_replay_process)
     simul.train(TOTAL_STEPS, 
                 target_update_steps=TARGET_UPDATE_STEPS, 
                 batch_size=32,
                 exploration_steps=EXPLORATION_STEPS, 
-                before_replay_process_func=before_replay_process,
-                process_func=process,
                 save_path='./trained_models/atari_model.pkl',
                 save_steps=50000)
 

@@ -10,7 +10,7 @@ from utils.env_wrapper import BasicEnv
 from utils.memory import ReplayMemory
 
 
-TOTAL_STEPS = 80000
+TOTAL_STEPS = 10000
 TARGET_UPDATE_STEPS = 300
 EXPLORATION_STEPS = 2000
 
@@ -48,6 +48,7 @@ def main():
                 exploration_steps=EXPLORATION_STEPS, 
                 save_path='./trained_models/basic_model.pkl',
                 save_steps=200)
+    simul.test(5, batch_size=32)
 
     env.close()
 
