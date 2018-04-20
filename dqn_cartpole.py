@@ -4,7 +4,7 @@ import torch
 import torch.optim as optim
 
 from networks.simplenet import SimpleANN
-from agents.simul import DQNSimulator
+from core.simul import DQNSimulator
 from agents.dqn import DQN
 from utils.env_wrapper import BasicEnv
 from utils.memory import ReplayMemory
@@ -46,7 +46,7 @@ def main():
                 target_update_steps=TARGET_UPDATE_STEPS, 
                 batch_size=32,
                 exploration_steps=EXPLORATION_STEPS, 
-                save_path='./trained_models/basic_model.pkl',
+                save_path='./trained_models/',
                 save_steps=200)
     simul.test(5, batch_size=32)
 

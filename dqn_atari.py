@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 from networks.simplenet import AtariConvNet
-from agents.simul import DQNSimulator
+from core.simul import DQNSimulator
 from agents.dqn import DQN
 from utils.env_wrapper import AtariEnv
 from utils.memory import ReplayMemory
@@ -73,7 +73,7 @@ def main(args):
         # load model
         dqn.load_model(args.test_model_path)
         # only need enough to stack frames
-        replay = ReplayMemory(HISTORY_LENGTH-1, history_length=HISTORY_LENGTH)
+        replay = ReplayMemory(HISTORY_LENGTH, history_length=HISTORY_LENGTH)
         simul = DQNSimulator(dqn, env, replay,
                              before_replay_process_func=before_replay_process,
                              after_replay_process_func=after_replay_process)
@@ -90,7 +90,7 @@ def main(args):
                     target_update_steps=TARGET_UPDATE_STEPS, 
                     batch_size=32,
                     exploration_steps=EXPLORATION_STEPS, 
-                    save_path='./trained_models/atari_model.pkl',
+                    save_path='./trained_models/',
                     save_steps=50000)
 
     env.close()

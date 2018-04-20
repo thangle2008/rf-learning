@@ -141,6 +141,19 @@ class DQN(object):
 
     def load_model(self, path):
         """Load parameters to the model."""
+
         saved_state = torch.load(path, map_location=lambda storage, loc: storage)
         self.model.load_state_dict(saved_state)
         self.update_target_network()
+
+
+    def save_optim(self, path):
+        """Save optimizer state."""
+
+        torch.save(self.optimizer.state_dict(), path)
+
+
+    def load_optim(self, path):
+        """Load optimizer state."""
+
+        self.optimizer.load_state_dict(torch.load(path))

@@ -47,12 +47,12 @@ class AtariEnv(BasicEnv):
         self.skip = skip
     
     
-    def set_noop_max(val):
+    def set_noop_max(self, val):
         
         self.noop_max = val
 
     
-    def set_frame_skip(val):
+    def set_frame_skip(self, val):
         
         self.skip = val
 

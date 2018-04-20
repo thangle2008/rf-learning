@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from utils.memory import Transition
 
@@ -101,7 +102,8 @@ class DQNSimulator(BaseSimulator):
 
             # save model periodically
             if save_path and t % save_steps == 0:
-                self.agent.save_model(save_path)
+                self.agent.save_model(os.path.join(save_path, 'model.pkl'))
+                self.agent.save_optim(os.path.join(save_path, 'optim.pkl'))
 
 
     def test(self, num_episodes, batch_size=32):
