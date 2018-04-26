@@ -10,7 +10,7 @@ from utils.env_wrapper import BasicEnv
 from utils.memory import ReplayMemory
 
 
-TOTAL_STEPS = 10000
+TOTAL_STEPS = 50000
 TARGET_UPDATE_STEPS = 300
 EXPLORATION_STEPS = 2000
 

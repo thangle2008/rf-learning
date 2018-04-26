@@ -27,8 +27,9 @@ class BasicEnv(object):
         self.env.close()
 
 
-    def step(self, action):
-
+    def step(self, action, test=False):
+        if test:
+            self.render()
         state, reward, done, info = self.env.step(action)
         return state, np.sign(reward), done, info
 
@@ -78,7 +79,7 @@ class AtariEnv(BasicEnv):
         for _ in range(self.skip):
             if test:
                 self.env.render()
-                time.sleep(0.005)
+            #    time.sleep(0.005)
             screen, reward, done, info = self.env.step(action)
             total_reward += reward
             if done:

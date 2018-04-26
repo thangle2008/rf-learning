@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 from utils.memory import Transition
+import cPickle as pickle
 
 
 class BaseSimulator(object):
@@ -59,6 +60,9 @@ class DQNSimulator(BaseSimulator):
         total_reward = 0.0
         state = self.env.reset()
         episode = 1
+        info_for_save = {
+            "reward": []
+        }
 
         last_t = 1
         for t in range(1, num_steps + 1):
@@ -95,6 +99,7 @@ class DQNSimulator(BaseSimulator):
                        "steps = {}").format(episode, t, num_steps, total_reward,
                                             self.agent.eps_current,
                                             t - last_t + 1))
+                info_for_save["reward"].append(total_reward)
                 state = self.env.reset()
                 total_reward = 0.0
                 last_t = t
@@ -104,6 +109,10 @@ class DQNSimulator(BaseSimulator):
             if save_path and t % save_steps == 0:
                 self.agent.save_model(os.path.join(save_path, 'model.pkl'))
                 self.agent.save_optim(os.path.join(save_path, 'optim.pkl'))
+
+        if save_path:
+            pickle.dump(info_for_save, 
+                        open(os.path.join(save_path, 'info.pkl'), "wb"))
 
 
     def test(self, num_episodes, batch_size=32):
